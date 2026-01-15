@@ -1,0 +1,3 @@
+[submodule "sources/lennys"]
+	path = sources/lennys
+	url = https://github.com/ChatPRD/lennys-podcast-transcripts.git
