@@ -6,10 +6,11 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Tuple
+import argparse
 
 import yaml
 
-EPISODES_DIR = Path("episodes")
+# EPISODES_DIR = Path("episodes")
 
 # Multi-label taxonomy for digital product Q&A
 TOPICS: Dict[str, List[str]] = {
@@ -97,9 +98,9 @@ def parse_frontmatter(md: str) -> Tuple[dict, str]:
         return {}, md
 
 
-def load_episodes() -> List[Episode]:
+def load_episodes(episodes_dir: Path) -> List[Episode]:
     eps: List[Episode] = []
-    for p in EPISODES_DIR.glob("*/transcript.md"):
+    for p in episodes_dir.glob("*/transcript.md"):
         md = p.read_text(encoding="utf-8", errors="replace")
         fm, body = parse_frontmatter(md)
 
@@ -150,7 +151,18 @@ def pick_labels(scores: Dict[str, float], min_score: float) -> List[str]:
 
 
 def main() -> None:
-    episodes = load_episodes()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--source", default="sources/lennys", help="Path to transcripts repo root")
+    args = ap.parse_args()
+    
+    source_root = Path(args.source)
+    episodes_dir = source_root / "episodes"
+    
+    if not episodes_dir.exists():
+        print(f"Could not find episodes/ at: {episodes_dir}")
+    return
+
+    episodes = load_episodes(episodes_dir)
     if not episodes:
         print("No episodes found under episodes/*/transcript.md")
         return
