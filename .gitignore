@@ -1,0 +1,13 @@
+# Build artifacts
+data/
+.cache/
+*.faiss
+*.sqlite
+*.db
+*.jsonl
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.env
