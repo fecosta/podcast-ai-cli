@@ -270,8 +270,3 @@ This is intended to be a **thinking tool**, not a chat toy.
 - Packaging as `podcast-ai` CLI
 
 ---
-
-## License
-
-MIT (or your preferred license)
-
