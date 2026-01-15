@@ -31,6 +31,16 @@ TAXONOMY = [
     "Design", "Leadership", "Finance", "Operations", "Career", "General"
 ]
 
+def make_cite(m: Dict[str, Any]) -> str:
+    """
+    Backward-compatible citation builder.
+    If source_id exists, use: <source_id>:episodes/<folder>#<chunk_id>
+    Else fallback: episodes/<folder>#<chunk_id>
+    """
+    source_id = m.get("source_id")
+    base = f"episodes/{m['episode_folder']}#{m['chunk_id']}"
+    return f"{source_id}:{base}" if source_id else base
+
 
 def l2_normalize(v: np.ndarray) -> np.ndarray:
     norms = np.linalg.norm(v, axis=1, keepdims=True)
@@ -205,7 +215,7 @@ def rerank_with_llm(
     items = []
     for i, (idx, score) in enumerate(candidates, start=1):
         m = meta[idx]
-        cite = f"episodes/{m['episode_folder']}#{m['chunk_id']}"
+        cite = make_cite(m)
         snippet = texts[idx][:max_chars_each]
         items.append(
             f"Item {i}\nCITE: {cite}\nTitle: {m.get('episode_title','')}\nGuest: {m.get('guest','')}\nText: {snippet}"
@@ -250,7 +260,7 @@ def build_context(indices: List[int], meta: List[Dict[str, Any]], texts: List[st
     blocks = []
     for rank, idx in enumerate(indices, start=1):
         m = meta[idx]
-        cite = f"episodes/{m['episode_folder']}#{m['chunk_id']}"
+        cite = make_cite(m)
         excerpt = texts[idx][:max_chars]
         blocks.append(
             f"[{rank}] CITE: {cite}\n"
@@ -275,7 +285,8 @@ def answer(client: OpenAI, question: str, context: str, model: str) -> str:
     user = (
         f"Question:\n{question}\n\n"
         f"Excerpts:\n{context}\n\n"
-        "Answer with citations like (episodes/<folder>#<chunk_id>)."
+        "Answer with citations like (source_id:episodes/<folder>#<chunk_id>). "
+        "If source_id is missing, cite as (episodes/<folder>#<chunk_id>)."
     )
     resp = client.responses.create(
         model=model,
@@ -359,7 +370,7 @@ def main() -> None:
     print("\n=== Retrieved evidence ===")
     for rank, idx in enumerate(final_indices, start=1):
         m = meta[idx]
-        cite = f"episodes/{m['episode_folder']}#{m['chunk_id']}"
+        cite = make_cite(m)
         print(f"[{rank}] cite={cite} labels={', '.join(m.get('labels', []))}")
         if m.get("episode_title"):
             print(f"     {m['episode_title']} — {m.get('guest','')}")

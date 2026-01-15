@@ -21,10 +21,12 @@ def main() -> None:
     con.execute("PRAGMA journal_mode=WAL;")
     con.execute("PRAGMA synchronous=NORMAL;")
 
-    # Base table
+    # Base table (now includes source_id + transcript_path)
     con.execute("""
     CREATE TABLE chunks (
         rowid INTEGER PRIMARY KEY,
+        source_id TEXT,
+        transcript_path TEXT,
         episode_folder TEXT,
         chunk_id TEXT,
         episode_title TEXT,
@@ -36,28 +38,34 @@ def main() -> None:
     """)
 
     # FTS5 virtual table (keyword search)
+    # Indexing a few metadata fields improves recall for names/episodes.
     con.execute("""
     CREATE VIRTUAL TABLE chunks_fts USING fts5(
         text,
         episode_title,
         guest,
+        episode_folder,
+        source_id,
         content='chunks',
         content_rowid='rowid'
     )
     """)
 
-    # Insert rows
     rows = 0
     with CHUNKS_FILE.open("r", encoding="utf-8") as f:
         for line in f:
             obj = json.loads(line)
+
             con.execute(
                 """
                 INSERT INTO chunks (
-                    episode_folder, chunk_id, episode_title, guest, youtube_url, labels_json, text
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    source_id, transcript_path, episode_folder, chunk_id,
+                    episode_title, guest, youtube_url, labels_json, text
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
+                    obj.get("source_id", "lennys"),
+                    obj.get("transcript_path", ""),
                     obj.get("episode_folder", ""),
                     obj.get("chunk_id", ""),
                     obj.get("episode_title", ""),

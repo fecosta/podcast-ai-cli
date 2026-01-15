@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import argparse
 import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Tuple
-import argparse
 
 import yaml
-
-# EPISODES_DIR = Path("episodes")
 
 # Multi-label taxonomy for digital product Q&A
 TOPICS: Dict[str, List[str]] = {
@@ -153,22 +151,26 @@ def pick_labels(scores: Dict[str, float], min_score: float) -> List[str]:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--source", default="sources/lennys", help="Path to transcripts repo root")
+    ap.add_argument("--source-id", default="lennys", help="Short id used in metadata/citations")
+    ap.add_argument("--out", default=str(OUT_FILE), help="Output jsonl file")
     args = ap.parse_args()
-    
+
     source_root = Path(args.source)
     episodes_dir = source_root / "episodes"
-    
+
     if not episodes_dir.exists():
         print(f"Could not find episodes/ at: {episodes_dir}")
-    return
+        return
 
     episodes = load_episodes(episodes_dir)
     if not episodes:
-        print("No episodes found under episodes/*/transcript.md")
+        print(f"No episodes found under: {episodes_dir}/*/transcript.md")
         return
 
+    out_path = Path(args.out)
+
     n = 0
-    with OUT_FILE.open("w", encoding="utf-8") as f:
+    with out_path.open("w", encoding="utf-8") as f:
         for ep in episodes:
             chunks = chunk_text(ep.text, CHUNK_WORDS, CHUNK_OVERLAP)
             for i, ch in enumerate(chunks):
@@ -176,8 +178,10 @@ def main() -> None:
                 labels = pick_labels(scores, DEFAULT_MIN_SCORE) or ["General"]
 
                 rec = {
+                    "source_id": args.source_id,
+                    "source_root": str(source_root),
                     "episode_folder": ep.folder,
-                    "transcript_path": str(ep.path),
+                    "transcript_path": str(ep.path.relative_to(source_root)),
                     "episode_title": ep.title,
                     "guest": ep.guest,
                     "youtube_url": ep.youtube_url,
@@ -189,7 +193,8 @@ def main() -> None:
                 f.write(json.dumps(rec, ensure_ascii=False) + "\n")
                 n += 1
 
-    print(f"Wrote {OUT_FILE} with {n} chunks.")
+    print(f"Wrote {out_path} with {n} chunks.")
+    print(f"Source: {source_root}")
 
 
 if __name__ == "__main__":

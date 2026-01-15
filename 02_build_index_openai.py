@@ -54,6 +54,8 @@ def main() -> None:
             mf.write(
                 json.dumps(
                     {
+                        "source_id": c.get("source_id"),
+                        "source_root": c.get("source_root"),
                         "episode_folder": c["episode_folder"],
                         "transcript_path": c["transcript_path"],
                         "episode_title": c["episode_title"],
@@ -61,7 +63,7 @@ def main() -> None:
                         "youtube_url": c.get("youtube_url", ""),
                         "chunk_id": c["chunk_id"],
                         "labels": c["labels"],
-                    },
+                        },
                     ensure_ascii=False,
                 )
                 + "\n"
